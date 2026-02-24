@@ -145,7 +145,11 @@ class CartService
     public function checkAddressCity($addresses, $city)
     {
         $cityModel = City::find($city);
-        $cityName = $cityModel?->name;
+        $cityNames = collect([
+            $cityModel?->name,
+            $cityModel?->inv_name,
+        ])->filter(fn($value) => filled($value))
+          ->map(fn($value) => mb_strtolower(trim((string) $value)));
 
         foreach ($addresses as $value) {
             $addressCity = trim((string) ($value->city ?? ''));
@@ -157,10 +161,24 @@ class CartService
                 return true;
             }
 
-            if ($cityName && strcasecmp($addressCity, trim($cityName)) === 0) {
+            $normalizedAddressCity = mb_strtolower($addressCity);
+            if ($cityNames->contains($normalizedAddressCity)) {
                 return true;
             }
+
+            if (is_numeric($addressCity)) {
+                $addressCityModel = City::find((int) $addressCity);
+                if ($addressCityModel && (int) $addressCityModel->id === (int) $city) {
+                    return true;
+                }
+            }
         }
+
+        Log::warning('Address city mismatch during checkout.', [
+            'target_city_id' => $city,
+            'target_city_name' => $cityModel?->name,
+            'address_cities' => collect($addresses)->pluck('city')->values()->all(),
+        ]);
 
         return false;
     }

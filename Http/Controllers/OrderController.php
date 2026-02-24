@@ -96,13 +96,18 @@ class OrderController extends Controller
         }
 
 
-        $cart->addAddress($customer->addresses()->first(), 'billing');
-        $cart->addAddress($customer->addresses()->first(), 'shipping');
+        $selectedAddress = $request->address_id
+            ? $customer->addresses()->where('id', $request->address_id)->first()
+            : $customer->addresses()->first();
 
-        if ($request->address_id) {
-            $cart->addAddress($customer->addresses()->where('id', $request->address_id)->first(), 'billing');
-            $cart->addAddress($customer->addresses()->where('id', $request->address_id)->first(), 'shipping');
+        if (!$selectedAddress) {
+            $response = new ErrorResponse('Delivery address not found.', Response::HTTP_NOT_ACCEPTABLE);
+
+            return response()->error($response);
         }
+
+        $cart->addAddress($selectedAddress, 'billing');
+        $cart->addAddress($selectedAddress, 'shipping');
 
         $firstLine = $cart->lines->first();
         $cityId = $firstLine?->purchasable?->city_id;
@@ -113,7 +118,7 @@ class OrderController extends Controller
             return response()->error($response);
         }
 
-        if (!$this->cartService->checkAddressCity($cart->addresses, $cityId)) {
+        if (!$this->cartService->checkAddressCity(collect([$selectedAddress]), $cityId)) {
             $response = new ErrorResponse('Please add a delivery address from the same city of the products.', Response::HTTP_NOT_ACCEPTABLE);
 
             return response()->error($response);
