@@ -104,8 +104,15 @@ class OrderController extends Controller
             $cart->addAddress($customer->addresses()->where('id', $request->address_id)->first(), 'shipping');
         }
 
-        $cityId = City::find($cart->lines[0]->purchasable->city_id)->id;
-        Log::alert($this->cartService->checkAddressCity($cart->addresses, $cityId));
+        $firstLine = $cart->lines->first();
+        $cityId = $firstLine?->purchasable?->city_id;
+
+        if (!$cityId) {
+            $response = new ErrorResponse('Unable to determine product city for checkout.', Response::HTTP_NOT_ACCEPTABLE);
+
+            return response()->error($response);
+        }
+
         if (!$this->cartService->checkAddressCity($cart->addresses, $cityId)) {
             $response = new ErrorResponse('Please add a delivery address from the same city of the products.', Response::HTTP_NOT_ACCEPTABLE);
 

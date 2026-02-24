@@ -18,6 +18,7 @@ use Lunar\Models\DiscountPurchasable;
 use Lunar\Models\ProductVariant;
 use phpDocumentor\Reflection\Exception;
 use Illuminate\Support\Facades\Log;
+use App\Models\City;
 
 class CartService
 {
@@ -143,15 +144,24 @@ class CartService
 
     public function checkAddressCity($addresses, $city)
     {
-        $exist = false;
-        foreach ($addresses as $key => $value) {
-           
-            if ($value->city == $city) {
-                $exist = true;
+        $cityModel = City::find($city);
+        $cityName = $cityModel?->name;
+
+        foreach ($addresses as $value) {
+            $addressCity = trim((string) ($value->city ?? ''));
+            if ($addressCity === '') {
+                continue;
+            }
+
+            if (is_numeric($addressCity) && (int) $addressCity === (int) $city) {
+                return true;
+            }
+
+            if ($cityName && strcasecmp($addressCity, trim($cityName)) === 0) {
+                return true;
             }
         }
-       
-      
-        return $exist;
+
+        return false;
     }
 }
