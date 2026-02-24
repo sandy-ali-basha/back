@@ -178,40 +178,52 @@ class ProductService
     public function addQtyAndPrice($id, $options)
     {
         $product = ProductModel::find($id);
+        if (!$product) {
+            throw new \InvalidArgumentException('Product not found.');
+        }
 
+        $variant = null;
 
+        if ($options != null) {
+            foreach ($options as $data) {
+                $variant = ProductVariant::create([
+                    'product_id' => $product->id,
+                    'sku' => $data['sku'],
+                    'unit_quantity' => $data['unit'],
+                    'tax_class_id' => $data['tax_class_id'],
+                    'stock' => $data['inventory'],
+                    'storage_qty' => $data['qty'],
+                    'purchasable' => $data['purchasable'],
+                    'city_id' => $data['city_id'],
+                    'reorder_point' => $data['reorder_point'],
+                ]);
 
-if($options!=null){
-    foreach ($options as $data) {
-        // 1. Create the variant
-        $variant = ProductVariant::create([
-            'product_id' => $product->id,
-            'sku' => $data['sku'],
-            'unit_quantity' => $data['unit'],
-            'tax_class_id' => $data['tax_class_id'],
-            'stock' => $data['inventory'],
-            'storage_qty' => $data['qty'],
-            'purchasable' => $data['purchasable'],
-            'city_id' => $data['city_id'],
-            'reorder_point' => $data['reorder_point'],
-        ]);
-        $flavor  = ProductOptionValue::where('product_option_id', 10)
-                                     ->where('id', $data['option_value_ids'][0])
-                                     ->first();
-        $packing = ProductOptionValue::where('product_option_id', 11)
-                                     ->where('id', $data['option_value_ids'][1])
-                                     ->first();
+                $optionValueIds = collect($data['option_value_ids'] ?? [])
+                    ->filter(fn($id) => (int) $id > 0)
+                    ->values();
 
-        $variant->values()->attach([$flavor->id, $packing->id]);
-        $variant->prices()->create([
-            'price' => $data['price'],
-            'currency_id' => City::find($data['city_id'])->currency_id,
-            'compare_price' => $data['compare_price']??null,
-            'compare_price_start_date' => $data['compare_price_start_date']??null,
-            'compare_price_end_date' => $data['compare_price_end_date']??null,
-        ]);
-    }
-}
+                if ($optionValueIds->isNotEmpty()) {
+                    $resolvedOptionIds = ProductOptionValue::whereIn('id', $optionValueIds)->pluck('id');
+                    if ($resolvedOptionIds->count() !== $optionValueIds->count()) {
+                        throw new \InvalidArgumentException('One or more option values are invalid.');
+                    }
+                    $variant->values()->attach($resolvedOptionIds->all());
+                }
+
+                $city = City::find($data['city_id']);
+                if (!$city) {
+                    throw new \InvalidArgumentException('City not found for variant pricing.');
+                }
+
+                $variant->prices()->create([
+                    'price' => $data['price'],
+                    'currency_id' => $city->currency_id,
+                    'compare_price' => $data['compare_price'] ?? null,
+                    'compare_price_start_date' => $data['compare_price_start_date'] ?? null,
+                    'compare_price_end_date' => $data['compare_price_end_date'] ?? null,
+                ]);
+            }
+        }
 
         return $variant;
     }
