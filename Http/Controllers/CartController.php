@@ -11,6 +11,7 @@ use App\Http\Response\ErrorResponse;
 use App\Http\Response\SuccessResponse;
 use App\Services\CartService;
 use App\Services\SettingService;
+use App\Models\City;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -96,6 +97,18 @@ class CartController extends Controller
 
                 return response()->error($response);
             }
+
+            $variantCity = City::find($prod_var->city_id);
+            if ($variantCity && !$cart->currency_id) {
+                $cart->update(['currency_id' => $variantCity->currency_id]);
+            }
+
+            if (!$prod_var->prices()->where('currency_id', $cart->currency_id)->exists()) {
+                $response = new ErrorResponse('Selected variant has no price for the cart currency.', Response::HTTP_NOT_ACCEPTABLE);
+
+                return response()->error($response);
+            }
+
             if ($prod_var->storage_qty - $prd['qty'] < 0) {
                 $response = new ErrorResponse('Sorry, not enought quantity to fill your order, We only have ' . $prod_var->storage_qty . ' Items.', Response::HTTP_NOT_ACCEPTABLE);
 
@@ -167,6 +180,23 @@ class CartController extends Controller
         
         foreach ($data->products as $product) {
             $prod = ProductVariant::where('id', $product['variant_id'])->first();
+            if (!$prod) {
+                $response = new ErrorResponse('No Variant Found', Response::HTTP_NOT_ACCEPTABLE);
+
+                return response()->error($response);
+            }
+
+            $variantCity = City::find($prod->city_id);
+            if ($variantCity && !$cartService->currency_id) {
+                $cartService->update(['currency_id' => $variantCity->currency_id]);
+            }
+
+            if (!$prod->prices()->where('currency_id', $cartService->currency_id)->exists()) {
+                $response = new ErrorResponse('Selected variant has no price for the cart currency.', Response::HTTP_NOT_ACCEPTABLE);
+
+                return response()->error($response);
+            }
+
             if ($prod->purchasable !== 'always') {
                 $response = new ErrorResponse('This Product is not for sale.', Response::HTTP_NOT_ACCEPTABLE);
 
