@@ -1,0 +1,32 @@
+<?php
+namespace App\Http\Patterns;;
+
+use $MODEL_PATH;
+use App\Models\Logs;
+use App\Models\$MODEL_NAMEModel;
+use Illuminate\Support\Facades\Log;
+
+class Delete$MODEL_NAME implements IOperations
+{
+    public function doOperation(array $data)
+    {
+        $$SERVICE_NAME = $MODEL_NAME::find($data['id']);
+        $$SERVICE_NAME->deleteTranslations();
+        return $$SERVICE_NAME->delete();
+    }
+
+    public function audit()
+    {
+        Logs::createNewRecord('delete', '$MODEL_NAME');
+    }
+
+    public function getErrorMessage()
+    {
+        Log::info('ERROR IN ADD NEW $MODEL_NAME us IN $MODEL_NAME CONTROLLER');
+    }
+
+    public function returnPage()
+    {
+        return redirect()->back();
+    }
+}

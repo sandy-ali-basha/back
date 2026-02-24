@@ -1,0 +1,30 @@
+<?php
+
+namespace App\Models;
+
+use Astrotomic\Translatable\Translatable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\App;
+
+class $MODEL_NAME extends Model
+{
+    use HasFactory, SoftDeletes,Translatable;
+
+    protected $fillable = [$VALUES];
+    public $translatedAttributes = [$VALUES];
+    public function category()
+    {
+        return $this->belongsTo($MODEL_NAME::class);
+    }
+
+    public function get$MODEL_NAMEById(int $id)
+    {
+        $$SERVICE_NAME =  $this->where('id', '=', $id)->first();
+        $$SERVICE_NAMETranslation = $$SERVICE_NAME->translations()->get();
+        $$SERVICE_NAME->translations = $$SERVICE_NAMETranslation;
+
+        return $$SERVICE_NAME;
+    }
+}

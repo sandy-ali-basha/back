@@ -1,0 +1,54 @@
+<?php
+
+namespace App\Services;
+
+use App\Http\Patterns\Add$MODEL_NAME;
+use App\Http\Patterns\Add$MODEL_NAMEDiscount;
+use App\Http\Patterns\Delete$MODEL_NAME;
+use App\Http\Patterns\Update$MODEL_NAME;
+use $MODEL_PATH;
+use Illuminate\Database\Eloquent\Collection;
+
+
+class $MODEL_NAMEService
+{
+
+    protected $MODEL_NAME $model;
+
+    public function __construct($MODEL_NAME $model)
+    {
+        $this->model = $model;
+    }
+
+    public function getAll$MODEL_NAMEs(): Collection
+    {
+        return $MODEL_NAME::all();
+    }
+
+    public function create$MODEL_NAME($data)
+    {
+        $brand = new Add$MODEL_NAME();
+
+        return $brand->doOperation($data->toArray());
+    }
+
+    public function getById($id)
+    {
+        return  $this->model->getById($id);
+    }
+
+    public function update$MODEL_NAME($id, $data)
+    {
+        $brand = new Update$MODEL_NAME();
+
+        return $brand->doOperation(['id'=>$id,'data'=>$data->toArray()]);
+    }
+
+    public function delete$MODEL_NAME($id)
+    {
+        $brand = new Delete$MODEL_NAME();
+
+        return $brand->doOperation(['id'=>$id]);
+    }
+
+}

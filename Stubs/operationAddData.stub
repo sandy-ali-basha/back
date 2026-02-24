@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Http\Patterns;
+
+use $MODEL_PATH;
+use App\Models\Logs;
+use App\Models\$MODEL_NAMEModel;
+use Illuminate\Support\Facades\Log;
+
+class Add$MODEL_NAME implements IOperations
+{
+    public  function doOperation(array $data)
+    {
+        $$SERVICE_NAME = $MODEL_NAMEModel::create($data);
+
+        $$SERVICE_NAMETranslation = $$SERVICE_NAME->translations()->get();
+        $$SERVICE_NAME->translations = $$SERVICE_NAMETranslation;
+
+        return $$SERVICE_NAME;
+    }
+
+    public function audit()
+    {
+        Logs::createNewRecord('Add', '$MODEL_NAME');
+    }
+
+    public function getErrorMessage()
+    {
+        \Illuminate\Support\Facades\Log::info('ERROR IN ADD $MODEL_NAME IN $MODEL_NAME CONTROLLER');
+    }
+
+    public function returnPage()
+    {
+        return redirect()->back();
+    }
+}

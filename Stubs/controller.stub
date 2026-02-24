@@ -1,0 +1,86 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Services\$MODEL_NAMEService;
+use Symfony\Component\HttpFoundation\Response;
+use App\Http\Response\ErrorResponse;
+use App\Http\Response\SuccessResponse;
+use App\Http\Resources\$MODEL_NAMECollection;
+use App\Http\Resources\$MODEL_NAMEResource;
+use App\Http\Data\Add$MODEL_NAMEData;
+use App\Http\Data\Update$MODEL_NAMEData;
+class $MODEL_NAMEController extends Controller
+{
+
+   public $MODEL_NAMEService $$SERVICE_NAMEService;
+
+    public function __construct($MODEL_NAMEService $$SERVICE_NAMEService)
+    {
+        $this->$SERVICE_NAMEService = $$SERVICE_NAMEService;
+    }
+
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index()
+    {
+        $$SERVICE_NAMEs = $this->$SERVICE_NAMEService->getAll$MODEL_NAMEs();
+        $$SERVICE_NAMEResource = new $MODEL_NAMECollection($$SERVICE_NAMEs);
+        $response = new SuccessResponse($$SERVICE_NAMEResource, Response::HTTP_OK);
+        return response()->success($response);
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function store(Request $request)
+    {
+        $data =  Add$MODEL_NAMEData::from($request);
+        $$SERVICE_NAME = $this->$SERVICE_NAMEService->create$MODEL_NAME($data);
+        $$SERVICE_NAME->withTranslation= true;
+        $$SERVICE_NAMEResource = new $MODEL_NAMEResource($$SERVICE_NAME);
+        $response = new SuccessResponse($$SERVICE_NAMEResource, Response::HTTP_OK);
+        return response()->success($response);
+    }
+
+
+    public function show($id,Request $request)
+    {
+        $$SERVICE_NAMEService = $this->$SERVICE_NAMEService->getById($id);
+        if (!$$SERVICE_NAMEService) {
+            $response = new ErrorResponse('$MODEL_NAME not found', Response::HTTP_NOT_FOUND);
+            return response()->error($response);
+        }
+        $$SERVICE_NAMEService->withTranslation = $request->headers->has('translations');
+        $$SERVICE_NAMEServiceResource = new $MODEL_NAMEResource($$SERVICE_NAMEService);
+        $response = new SuccessResponse($$SERVICE_NAMEServiceResource, Response::HTTP_OK);
+        return response()->success($response);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $data = Update$MODEL_NAMEData::from($request);
+        $$SERVICE_NAMEService = $this->$SERVICE_NAMEService->update$MODEL_NAME($id, $data);
+        $$SERVICE_NAMEService->withTranslation= true;
+        $$SERVICE_NAMEServiceResource = new $MODEL_NAMEResource($$SERVICE_NAMEService);
+        $response = new SuccessResponse($$SERVICE_NAMEServiceResource, Response::HTTP_OK);
+        return response()->success($response);
+    }
+
+
+    public function destroy($id)
+    {
+        $this->$SERVICE_NAMEService->delete$MODEL_NAME($id);
+        $response = new SuccessResponse("$SERVICE_NAME is deleted", Response::HTTP_OK);
+
+        return response()->success($response);
+    }
+
+}

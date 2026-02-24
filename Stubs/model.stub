@@ -1,0 +1,38 @@
+<?php
+
+namespace App\Models;
+
+use Astrotomic\Translatable\Translatable;
+use Illuminate\Database\Eloquent\Model;
+use Lunar\Models\$MODEL_NAME;
+
+class $MODEL_NAMEModel extends $MODEL_NAME
+{
+    use  Translatable;
+
+    public $translatedAttributes = [$VALUES];
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+
+        $this->setTable(config('lunar.database.table_prefix').'$SERVICE_NAME');
+
+        if ($connection = config('lunar.database.connection', false)) {
+            $this->setConnection($connection);
+        }
+    }
+    public static function create(array $attributes = [])
+    {
+
+        return static::query()->create($attributes);
+    }
+
+    public function getById($id)
+    {
+        $$SERVICE_NAME =  $this->where('id', '=', $id)->first();
+        $$SERVICE_NAMETranslation = $$SERVICE_NAME->translations()->get();
+        $$SERVICE_NAME->translations = $$SERVICE_NAMETranslation;
+
+        return $$SERVICE_NAME;
+    }
+}

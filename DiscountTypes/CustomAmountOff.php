@@ -1,0 +1,215 @@
+<?php
+
+namespace App\DiscountTypes;
+
+use Lunar\Base\ValueObjects\Cart\DiscountBreakdown;
+use Lunar\Base\ValueObjects\Cart\DiscountBreakdownLine;
+use Lunar\DataTypes\Price;
+use Lunar\Models\Cart;
+use Lunar\Models\CartLine;
+use Lunar\Models\Collection;
+use Lunar\DiscountTypes\AbstractDiscountType;
+class CustomAmountOff extends AbstractDiscountType
+{
+    /**
+     * Return the name of the discount.
+     */
+    public function getName(): string
+    {
+        return 'Custom Amount off';
+    }
+
+    /**
+     * Called just before cart totals are calculated.
+     *
+     * @return CartLine
+     */
+    public function apply(Cart $cart): Cart
+    {
+        $data = $this->discount->data;
+
+        // if (! $this->checkDiscountConditions($cart)) {
+        //     return $cart;
+        // }
+
+        if ($data['fixed_value']) {
+            return $this->applyFixedValue(
+                values: $data['fixed_values'],
+                cart: $cart,
+            );
+        }
+
+        return $this->applyPercentage(
+            value: $data['percentage'],
+            cart: $cart
+        );
+    }
+
+    /**
+     * Apply fixed value discount
+     */
+    private function applyFixedValue(array $values, Cart $cart): Cart
+    {
+        $currency = $cart->currency;
+
+        $value = (int) bcmul($values[$currency->name] ?? 0, $currency->factor);
+
+        $lines = $this->getEligibleLines($cart);
+        $linesSubtotal = $lines->sum('subTotal.value');
+        
+        if (! $value || $linesSubtotal < $value) {
+            return $cart;
+        }
+
+        $divisionalAmount = $value / $lines->count();
+        $roundedChunk = (int) (round($divisionalAmount, 2));
+
+        $remaining = $value;
+
+        $affectedLines = collect();
+
+        foreach ($lines as $line) {
+            if ($line->subTotal->value < $roundedChunk) {
+                $amount = $roundedChunk - ($roundedChunk % $line->subTotal->value);
+            } else {
+                $amount = $roundedChunk;
+            }
+
+            // If this discount already has a greater discount value
+            // don't add this one as they already have a better deal.
+            if ($line->discountTotal->value > $amount) {
+                continue;
+            }
+
+            $remaining -= $amount;
+
+            $line->discountTotal = new Price(
+                $amount,
+                $cart->currency,
+                1
+            );
+
+            $line->subTotalDiscounted = new Price(
+                $line->subTotal->value - $amount,
+                $cart->currency,
+                1
+            );
+
+            $affectedLines->push(new DiscountBreakdownLine(
+                line: $line,
+                quantity: $line->quantity
+            ));
+        }
+
+        // Do we have an amount left over? if so, grab the first line that has
+        // enough left to apply the remaining too.
+        if ($remaining) {
+            $line = $cart->lines->first(function ($line) use ($remaining) {
+                return (bool) (($line->subTotal->value - $line->discountTotal->value) - $remaining);
+            });
+
+            $newDiscountTotal = $line->discountTotal->value + $remaining;
+
+            $line->discountTotal = new Price(
+                $newDiscountTotal,
+                $cart->currency,
+                1
+            );
+
+            $line->subTotalDiscounted = new Price(
+                $line->subTotal->value - $newDiscountTotal,
+                $cart->currency,
+                1
+            );
+        }
+
+        if (! $cart->discounts) {
+            $cart->discounts = collect();
+        }
+
+        $cart->discounts->push($this);
+
+        $this->addDiscountBreakdown($cart, new DiscountBreakdown(
+            discount: $this->discount,
+            lines: $affectedLines,
+            price: new Price($value, $cart->currency, 1)
+        ));
+    
+        return $cart;
+    }
+
+    /**
+     * Return the eligible lines for the discount.
+     */
+    protected function getEligibleLines(Cart $cart): \Illuminate\Support\Collection
+    {
+
+        $lines = $cart->lines;
+
+
+        return $lines;
+    }
+
+    /**
+     * Apply the percentage to the cart line.
+     *
+     * @param  int  $value
+     * @param  CartLine  $cartLine
+     * @return CartLine
+     */
+    private function applyPercentage($value, $cart): Cart
+    {
+        $lines = $this->getEligibleLines($cart);
+
+        $affectedLines = collect();
+        $totalDiscount = 0;
+
+        foreach ($lines as $line) {
+            $subTotal = $line->subTotal->value;
+            $subTotalDiscounted = $line->subTotalDiscounted?->value ?: 0;
+
+            if ($subTotalDiscounted) {
+                $subTotal = $subTotalDiscounted;
+            }
+
+            $amount = (int) round($subTotal * ($value / 100));
+
+            $totalDiscount += $amount;
+
+            $line->discountTotal = new Price(
+                $subTotalDiscounted + $amount,
+                $cart->currency,
+                1
+            );
+
+            $line->subTotalDiscounted = new Price(
+                $subTotal - $amount,
+                $cart->currency,
+                1
+            );
+
+            $affectedLines->push(new DiscountBreakdownLine(
+                line: $line,
+                quantity: $line->quantity
+            ));
+        }
+
+        if (! $cart->discounts) {
+            $cart->discounts = collect();
+        }
+
+        if ($totalDiscount <= 0) {
+            return $cart;
+        }
+
+        $cart->discounts->push($this);
+
+        $this->addDiscountBreakdown($cart, new DiscountBreakdown(
+            discount: $this->discount,
+            lines: $affectedLines,
+            price: new Price($totalDiscount, $cart->currency, 1)
+        ));
+
+        return $cart;
+    }
+}

@@ -1,0 +1,13 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class $MODEL_NAMEModelTranslation extends Model
+{
+    public $timestamps = false;
+    protected $fillable = [$VALUES];
+    protected $table = '$SERVICE_NAME_model_translation';
+}

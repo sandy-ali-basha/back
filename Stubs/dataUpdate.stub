@@ -1,0 +1,27 @@
+<?php
+
+
+namespace App\Http\Data;
+
+use Spatie\LaravelData\Data;
+
+class update$MODEL_NAMEData extends Data
+{
+
+   $VARS
+
+    public function __construct(
+    $CONSTRUCTOR_VARS
+    )
+    {
+
+    }
+
+
+    public static function rules(): array
+    {
+        return [
+
+        ];
+    }
+}

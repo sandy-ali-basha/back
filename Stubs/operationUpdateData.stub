@@ -1,0 +1,37 @@
+<?php
+namespace App\Http\Patterns;
+
+use $MODEL_PATH;
+use App\Models\Logs;
+use App\Models\$MODEL_NAMEModel;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\App;
+
+class Update$MODEL_NAME implements IOperations
+{
+    public  function doOperation(array $data)
+    {
+        $$SERVICE_NAME = $MODEL_NAMEModel::find($data['id']);
+
+        $$SERVICE_NAME->update($data['data']);
+        $$SERVICE_NAMETranslation = $$SERVICE_NAME->translations()->get();
+        $$SERVICE_NAME->translations = $$SERVICE_NAMETranslation;
+
+        return $$SERVICE_NAME;
+    }
+
+    public function audit()
+    {
+        Logs::createNewRecord('Update', '$MODEL_NAME');
+    }
+
+    public function getErrorMessage()
+    {
+        Log::info('ERROR IN Update $MODEL_NAME IN $MODEL_NAME CONTROLLER');
+    }
+
+    public function returnPage()
+    {
+        return redirect()->back();
+    }
+}
