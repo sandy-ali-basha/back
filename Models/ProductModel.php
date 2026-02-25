@@ -104,28 +104,47 @@ if (!empty($filters)) {
             continue;
         }
 
-        $normalizedValueIds = collect($valueIds)
+        $rawValues = is_array($valueIds) ? $valueIds : [];
+
+        // Ignore truly empty filters like {3: []}
+        if (empty($rawValues)) {
+            continue;
+        }
+
+        $hasZeroValue = collect($rawValues)
+            ->contains(fn($id) => is_numeric($id) && (int) $id === 0);
+
+        $normalizedValueIds = collect($rawValues)
             ->filter(fn($id) => is_numeric($id) && (int) $id > 0)
             ->map(fn($id) => (int) $id)
             ->unique()
             ->values()
             ->all();
 
+        // If only 0 is sent (e.g. {4:[0]}), treat as "any value under this attribute".
+        $useAnyValueForAttribute = $hasZeroValue && empty($normalizedValueIds);
+
+        // Ignore invalid payloads that ended with no usable values and no explicit 0 wildcard.
+        if (!$useAnyValueForAttribute && empty($normalizedValueIds)) {
+            continue;
+        }
+
         $normalizedFilters[] = [
             'attribute_id' => $attributeId,
             'value_ids' => $normalizedValueIds,
+            'use_any_value' => $useAnyValueForAttribute,
         ];
     }
 
     foreach ($normalizedFilters as $filter) {
         $attributeId = $filter['attribute_id'];
         $valueIds = $filter['value_ids'];
+        $useAnyValue = $filter['use_any_value'];
 
-        $query->whereHas('ProductAttributesValues', function ($q) use ($attributeId, $valueIds) {
+        $query->whereHas('ProductAttributesValues', function ($q) use ($attributeId, $valueIds, $useAnyValue) {
             $q->where('product_attributes_values.product_attributes_id', $attributeId);
 
-            // If values list is empty (e.g. {4: []}), return all products having any value under this attribute.
-            if (!empty($valueIds)) {
+            if (!$useAnyValue) {
                 $q->whereIn('product_attributes_values_id', $valueIds);
             }
         });
