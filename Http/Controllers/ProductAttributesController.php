@@ -102,6 +102,24 @@ class ProductAttributesController extends Controller
             return response()->success(new SuccessResponse("Category is not found", 404, 'ProductAttributes not found'));
         }
 
+        // Toggle status as boolean true/false
+        $category->status = !((bool) $category->status);
+        $category->save();
+
+        return response()->success(new SuccessResponse([
+            'id' => $category->id,
+            'status' => (bool) $category->status,
+        ], 200, 'updated successfully'));
+    }
+
+    public function toggleNavStatus($id)
+    {
+        $category = ProductAttributes::find($id);
+
+        if (!$category) {
+            return response()->success(new SuccessResponse("Category is not found", 404, 'ProductAttributes not found'));
+        }
+
         // Toggle nav_active as boolean true/false
         $category->nav_active = !((bool) $category->nav_active);
         $category->save();
