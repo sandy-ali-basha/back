@@ -18,6 +18,7 @@ use Lunar\Models\DiscountPurchasable;
 use Lunar\Models\ProductVariant;
 use phpDocumentor\Reflection\Exception;
 use Illuminate\Support\Facades\Log;
+use App\Models\City;
 
 class CartService
 {
@@ -143,15 +144,42 @@ class CartService
 
     public function checkAddressCity($addresses, $city)
     {
-        $exist = false;
-        foreach ($addresses as $key => $value) {
-           
-            if ($value->city == $city) {
-                $exist = true;
+        $cityModel = City::find($city);
+        $cityNames = collect([
+            $cityModel?->name,
+            $cityModel?->inv_name,
+        ])->filter(fn($value) => filled($value))
+          ->map(fn($value) => mb_strtolower(trim((string) $value)));
+
+        foreach ($addresses as $value) {
+            $addressCity = trim((string) ($value->city ?? ''));
+            if ($addressCity === '') {
+                continue;
+            }
+
+            if (is_numeric($addressCity) && (int) $addressCity === (int) $city) {
+                return true;
+            }
+
+            $normalizedAddressCity = mb_strtolower($addressCity);
+            if ($cityNames->contains($normalizedAddressCity)) {
+                return true;
+            }
+
+            if (is_numeric($addressCity)) {
+                $addressCityModel = City::find((int) $addressCity);
+                if ($addressCityModel && (int) $addressCityModel->id === (int) $city) {
+                    return true;
+                }
             }
         }
-       
-      
-        return $exist;
+
+        Log::warning('Address city mismatch during checkout.', [
+            'target_city_id' => $city,
+            'target_city_name' => $cityModel?->name,
+            'address_cities' => collect($addresses)->pluck('city')->values()->all(),
+        ]);
+
+        return false;
     }
 }

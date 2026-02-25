@@ -86,23 +86,48 @@ class ProductModel extends Product
             //}
 if (!empty($filters)) {
 
-    foreach ($filters as $filter) {
+    $normalizedFilters = [];
 
-        $attributeId = $filter['attribute_id'] ?? null;
-        $valueIds    = $filter['values'] ?? [];
+    foreach ($filters as $key => $filter) {
+        // Format A: [{"attribute_id": 4, "values": [0,45]}, ...]
+        if (is_array($filter) && array_key_exists('attribute_id', $filter)) {
+            $attributeId = (int) $filter['attribute_id'];
+            $valueIds = is_array($filter['values'] ?? null) ? $filter['values'] : [];
+        }
+        // Format B: {"4": [0,45], "14": [82]}
+        else {
+            $attributeId = is_numeric($key) ? (int) $key : 0;
+            $valueIds = is_array($filter) ? $filter : [];
+        }
 
-        if (!$attributeId) {
+        if ($attributeId <= 0) {
             continue;
         }
 
-        $query->whereHas('ProductAttributesValues', function ($q) use ($attributeId, $valueIds) {
+        $normalizedValueIds = collect($valueIds)
+            ->filter(fn($id) => is_numeric($id) && (int) $id > 0)
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
 
+        $normalizedFilters[] = [
+            'attribute_id' => $attributeId,
+            'value_ids' => $normalizedValueIds,
+        ];
+    }
+
+    foreach ($normalizedFilters as $filter) {
+        $attributeId = $filter['attribute_id'];
+        $valueIds = $filter['value_ids'];
+
+        $query->whereHas('ProductAttributesValues', function ($q) use ($attributeId, $valueIds) {
             $q->where('product_attributes_values.product_attributes_id', $attributeId);
 
+            // If values list is empty (e.g. {4: []}), return all products having any value under this attribute.
             if (!empty($valueIds)) {
                 $q->whereIn('product_attributes_values_id', $valueIds);
             }
-
         });
     }
 }

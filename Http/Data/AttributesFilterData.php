@@ -32,7 +32,7 @@ class AttributesFilterData extends Data
         $this->filters       = $filters;
         $this->product_type_id       = $product_type_id;
         $this->brand_id       = $brand_id;
-        $this->min_price       = $max_price;
-        $this->max_price       = $min_price;
+        $this->min_price       = $min_price;
+        $this->max_price       = $max_price;
     }
 }
