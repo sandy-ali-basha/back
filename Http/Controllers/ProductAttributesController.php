@@ -120,13 +120,13 @@ class ProductAttributesController extends Controller
             return response()->success(new SuccessResponse("Category is not found", 404, 'ProductAttributes not found'));
         }
 
-        // Toggle nav_active as boolean true/false
-        $category->nav_active = !((bool) $category->nav_active);
+        // Toggle nav_active between 0 and 1
+        $category->nav_active = $category->nav_active ? 0 : 1;
         $category->save();
 
         return response()->success(new SuccessResponse([
             'id' => $category->id,
-            'navActive' => (bool) $category->nav_active,
+            'navActive' => (int) $category->nav_active,
         ], 200, 'updated successfully'));
     }
 
