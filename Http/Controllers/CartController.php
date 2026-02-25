@@ -98,13 +98,8 @@ class CartController extends Controller
                 return response()->error($response);
             }
 
-            $variantCity = City::find($prod_var->city_id);
-            if ($variantCity && !$cart->currency_id) {
-                $cart->update(['currency_id' => $variantCity->currency_id]);
-            }
-
-            if (!$prod_var->prices()->where('currency_id', $cart->currency_id)->exists()) {
-                $response = new ErrorResponse('Selected variant has no price for the cart currency.', Response::HTTP_NOT_ACCEPTABLE);
+            if (!$this->ensureCartCurrencyMatchesVariant($cart, $prod_var)) {
+                $response = new ErrorResponse('Selected variant has no price in any usable currency.', Response::HTTP_NOT_ACCEPTABLE);
 
                 return response()->error($response);
             }
@@ -186,13 +181,8 @@ class CartController extends Controller
                 return response()->error($response);
             }
 
-            $variantCity = City::find($prod->city_id);
-            if ($variantCity && !$cartService->currency_id) {
-                $cartService->update(['currency_id' => $variantCity->currency_id]);
-            }
-
-            if (!$prod->prices()->where('currency_id', $cartService->currency_id)->exists()) {
-                $response = new ErrorResponse('Selected variant has no price for the cart currency.', Response::HTTP_NOT_ACCEPTABLE);
+            if (!$this->ensureCartCurrencyMatchesVariant($cartService, $prod)) {
+                $response = new ErrorResponse('Selected variant has no price in any usable currency.', Response::HTTP_NOT_ACCEPTABLE);
 
                 return response()->error($response);
             }
@@ -235,6 +225,39 @@ class CartController extends Controller
         $response                     = new SuccessResponse($cartServiceResource, Response::HTTP_OK);
 
         return response()->success($response);
+    }
+
+    private function resolveCartCurrencyForVariant($cart, ProductVariant $variant): ?int
+    {
+        $currentCurrencyId = $cart->currency_id;
+
+        if ($currentCurrencyId && $variant->prices()->where('currency_id', $currentCurrencyId)->exists()) {
+            return (int) $currentCurrencyId;
+        }
+
+        $variantCity = City::find($variant->city_id);
+        $cityCurrencyId = $variantCity?->currency_id;
+        if ($cityCurrencyId && $variant->prices()->where('currency_id', $cityCurrencyId)->exists()) {
+            return (int) $cityCurrencyId;
+        }
+
+        $firstPrice = $variant->prices()->first();
+
+        return $firstPrice?->currency_id;
+    }
+
+    private function ensureCartCurrencyMatchesVariant($cart, ProductVariant $variant): bool
+    {
+        $resolvedCurrencyId = $this->resolveCartCurrencyForVariant($cart, $variant);
+        if (!$resolvedCurrencyId) {
+            return false;
+        }
+
+        if ((int) $cart->currency_id !== (int) $resolvedCurrencyId) {
+            $cart->update(['currency_id' => $resolvedCurrencyId]);
+        }
+
+        return $variant->prices()->where('currency_id', $resolvedCurrencyId)->exists();
     }
 
     public function removeFromCart(int $id, Request $request)
