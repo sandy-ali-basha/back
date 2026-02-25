@@ -12,6 +12,7 @@ class AddProductAttributes implements IOperations
     { 
         $image = $data['image_url'] ?? null;
         unset($data['image_url']);
+        $data['nav_active'] = true;
         $product_attributes = ProductAttributes::create($data);
           if ($image) {
                 $product_attributes

@@ -14,6 +14,7 @@ class ProductAttributesResource extends JsonResource
             'title' => $this->title,
             'tag'=>$this->tag,
             'status'=>$this->status,
+            'navActive' => (int) $this->nav_active,
             'image'=> $this->image_url,
             'translations' => $this->translations
         ];
