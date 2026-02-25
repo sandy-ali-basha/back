@@ -13,8 +13,6 @@ use Lunar\Models\Currency;
 use App\Models\OrderModel as Order;
 use App\Models\Setting;
 
-use Nnjeim\World\Models\State;
-use Illuminate\Support\Facades\Log;
 
 class CreateCustomOrder extends AbstractAction
 {
@@ -29,7 +27,9 @@ class CreateCustomOrder extends AbstractAction
         $settingService = app('\App\Services\SettingService');
         $point = $settingService->getByName('point_price');
         $point_price = floatval($point ? $point->value : 0);
-                $shipping_price = State::where('id',$cart->addresses()->first()->city)->first()->shipping_price;
+        $shippingAddress = $cart->shippingAddress ?? $cart->addresses()->where('type', 'shipping')->first() ?? $cart->addresses()->first();
+        $shipping_price = $this->resolveShippingPrice($shippingAddress);
+
         $freeLimit= Setting::find(79);
         if($freeLimit){
           if ($cart->total->decimal(true)>= $freeLimit->value){
@@ -198,5 +198,42 @@ class CreateCustomOrder extends AbstractAction
             return $this;
         });
     }
+    private function resolveShippingPrice($address): float
+    {
+        if (!$address) {
+            return 0.0;
+        }
+
+        $stateValue = is_string($address->state ?? null) ? trim($address->state) : $address->state;
+        $cityValue = is_string($address->city ?? null) ? trim($address->city) : $address->city;
+
+        if (is_numeric($stateValue)) {
+            return (float) (\App\Models\City::find((int) $stateValue)?->shipping_price ?? 0);
+        }
+
+        if (is_numeric($cityValue)) {
+            return (float) (\App\Models\City::find((int) $cityValue)?->shipping_price ?? 0);
+        }
+
+        $candidates = array_filter([
+            $stateValue,
+            is_string($stateValue) ? preg_replace('/^state\./', '', $stateValue) : null,
+            $cityValue,
+        ]);
+
+        foreach ($candidates as $candidate) {
+            $city = \App\Models\City::query()
+                ->where('name', $candidate)
+                ->orWhere('inv_name', $candidate)
+                ->first();
+
+            if ($city) {
+                return (float) ($city->shipping_price ?? 0);
+            }
+        }
+
+        return 0.0;
+    }
+
 }
 

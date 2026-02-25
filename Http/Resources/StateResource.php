@@ -30,9 +30,11 @@ class StateResource extends JsonResource
         // 3. The count is now simply the size of the resulting collection.
         $productsCount = $products->count();
 
+        $translatedName = trans("state.{$this->name}");
+
         $data = [
             'id' => $this->id,
-            "name" => trans("state.{$this->name}"),
+            "name" => $translatedName === "state.{$this->name}" ? $this->name : $translatedName,
             "value" => $this->name,
             'shipping_price' => $this->shipping_price,
             "products_count"=>$productsCount,
