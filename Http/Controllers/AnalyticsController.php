@@ -41,16 +41,15 @@ class AnalyticsController extends Controller
         $topProducts = DB::table('lunar_order_lines')
             ->join('lunar_orders', 'lunar_orders.id', '=', 'lunar_order_lines.order_id')
             ->join('lunar_carts', 'lunar_orders.id', '=', 'lunar_carts.order_id')
-            ->leftJoin('lunar_products_variants', 'lunar_products_variants.id', '=', 'lunar_order_lines.purchasable_id')
+            ->whereNotNull('lunar_carts.completed_at')
             ->select(
                 'lunar_order_lines.purchasable_id',
-                DB::raw("COALESCE(lunar_products_variants.name, 'Unknown') as productName"),
+                DB::raw("CONCAT('Product #', lunar_order_lines.purchasable_id) as productName"),
                 DB::raw('SUM(lunar_order_lines.quantity) as unitsSold'),
                 DB::raw('SUM(lunar_order_lines.sub_total) as orderValue'),
                 DB::raw('COUNT(DISTINCT lunar_order_lines.order_id) as ordersWithProduct')
             )
-            ->whereNotNull('lunar_carts.completed_at')
-            ->groupBy('lunar_order_lines.purchasable_id', 'lunar_products_variants.name')
+            ->groupBy('lunar_order_lines.purchasable_id')
             ->orderByDesc('unitsSold')
             ->limit(10)
             ->get()
