@@ -11,6 +11,10 @@ class UpdateProductAttributes implements IOperations
     public  function doOperation(array $data)
     {
         $product_attributes = ProductAttributes::find($data['id']);
+        if (array_key_exists('navActive', $data['data'])) {
+            $data['data']['nav_active'] = $data['data']['navActive'];
+            unset($data['data']['navActive']);
+        }
         $product_attributes->update($data['data']);
         $product_attributesTranslation = $product_attributes->translations()->get();
         $product_attributes->translations = $product_attributesTranslation;

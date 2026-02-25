@@ -25,7 +25,11 @@ class ProductAttributes extends BaseModel implements SpatieHasMedia
         }
     }
 use HasFactory, SoftDeletes, Translatable, HasMedia;
-    protected $fillable = ['title','status'];
+    protected $fillable = ['title','status', 'nav_active'];
+    protected $casts = [
+        'status' => 'boolean',
+        'nav_active' => 'boolean',
+    ];
     public $translatedAttributes = ['title'];
 
     public function ProductAttributeValues(){

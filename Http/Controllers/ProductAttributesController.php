@@ -97,13 +97,19 @@ class ProductAttributesController extends Controller
     public function toggleStatus($id)
     {
         $category = ProductAttributes::find($id);
+
         if (!$category) {
-          return response()->success(new SuccessResponse("Category is not found", 404, 'ProductAttributes not found'));
+            return response()->success(new SuccessResponse("Category is not found", 404, 'ProductAttributes not found'));
         }
-        // قلب الحالة بين 0 و 1
-        $category->status = $category->status ? 0 : 1;
+
+        // Toggle as boolean true/false
+        $category->status = !((bool) $category->status);
         $category->save();
-       return response()->success(new SuccessResponse($category, 200, 'updated successfully'));
+
+        return response()->success(new SuccessResponse([
+            'id' => $category->id,
+            'status' => (bool) $category->status,
+        ], 200, 'updated successfully'));
     }
 
 }
