@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AnalyticsController extends Controller
 {
@@ -73,22 +74,35 @@ class AnalyticsController extends Controller
         $totalCarts = max($totalCartsCount, 1);
         $abandonedCartRate = round(($abandonedCarts / $totalCarts) * 100, 2);
 
-        $points = DB::table('lunar_carts')
-            ->select(
-                DB::raw('SUM(CASE WHEN completed_at IS NULL AND shipping_option IS NULL THEN 1 ELSE 0 END) as shipping'),
-                DB::raw('SUM(CASE WHEN completed_at IS NULL AND shipping_option IS NOT NULL AND billing_address_id IS NULL THEN 1 ELSE 0 END) as payment'),
-                DB::raw('SUM(CASE WHEN completed_at IS NULL AND billing_address_id IS NOT NULL THEN 1 ELSE 0 END) as checkout')
-            )
-            ->first();
+        $pointOfAbandonment = [
+            'shipping' => 0,
+            'payment' => 0,
+            'checkout' => (int) $abandonedCarts,
+        ];
+
+        $hasShippingOption = Schema::hasColumn('lunar_carts', 'shipping_option');
+        $hasBillingAddress = Schema::hasColumn('lunar_carts', 'billing_address_id');
+
+        if ($hasShippingOption && $hasBillingAddress) {
+            $points = DB::table('lunar_carts')
+                ->select(
+                    DB::raw('SUM(CASE WHEN completed_at IS NULL AND shipping_option IS NULL THEN 1 ELSE 0 END) as shipping'),
+                    DB::raw('SUM(CASE WHEN completed_at IS NULL AND shipping_option IS NOT NULL AND billing_address_id IS NULL THEN 1 ELSE 0 END) as payment'),
+                    DB::raw('SUM(CASE WHEN completed_at IS NULL AND billing_address_id IS NOT NULL THEN 1 ELSE 0 END) as checkout')
+                )
+                ->first();
+
+            $pointOfAbandonment = [
+                'shipping' => (int) ($points->shipping ?? 0),
+                'payment' => (int) ($points->payment ?? 0),
+                'checkout' => (int) ($points->checkout ?? 0),
+            ];
+        }
 
         $abandonedCartData = [
             'abandonedCarts' => (int) $abandonedCarts,
             'abandonedCartRate' => (float) $abandonedCartRate,
-            'pointOfAbandonment' => [
-                'shipping' => (int) ($points->shipping ?? 0),
-                'payment' => (int) ($points->payment ?? 0),
-                'checkout' => (int) ($points->checkout ?? 0),
-            ],
+            'pointOfAbandonment' => $pointOfAbandonment,
         ];
 
         // -------------------
