@@ -12,7 +12,6 @@ class AddProductAttributesData extends Data
     public array $kr;
     public array $en;
      public bool $status;
-    public bool $navActive;
     public UploadedFile $image_url;
 
     public function __construct(
@@ -20,7 +19,6 @@ class AddProductAttributesData extends Data
         array  $kr,
         array  $en,
         bool $status,
-        bool $navActive,
         UploadedFile $image_url
 
     )
@@ -29,7 +27,6 @@ class AddProductAttributesData extends Data
         $this->kr = $kr;
         $this->en = $en;
         $this->status = $status;
-        $this->navActive = $navActive;
         $this->image_url = $image_url;
         
     }
@@ -42,7 +39,6 @@ class AddProductAttributesData extends Data
             "en.title" => "required",
             "kr.title" => "required",
             "status" => ['required', 'boolean'],
-            "navActive" => ['required', 'boolean'],
             'image_url' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
 
         ];
