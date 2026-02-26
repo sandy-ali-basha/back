@@ -356,11 +356,13 @@ class HomePageController extends Controller
     }
 
 
-    private function deleteFromHomeStorage(?string $path): void
+    private function deleteFromHomeStorage(mixed $path): void
     {
-        if (!empty($path)) {
-            Storage::disk('home_storage')->delete($path);
+        if (!is_string($path) || trim($path) === '') {
+            return;
         }
+
+        Storage::disk('home_storage')->delete($path);
     }
 
 }
