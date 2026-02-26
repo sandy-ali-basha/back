@@ -136,17 +136,17 @@ class HomePageController extends Controller
 
                     if ($section->id === 4) {
                         if (isset($item['video_en'])) {
-                            Storage::disk('home_storage')->delete($sectionItem->video_en);
+                            $this->deleteFromHomeStorage($sectionItem->video_en);
                             $updateData['video_en'] = $item['video_en']->store('home', 'home_storage');
                         }
 
                         if (isset($item['video_ar'])) {
-                            Storage::disk('home_storage')->delete($sectionItem->video_ar);
+                            $this->deleteFromHomeStorage($sectionItem->video_ar);
                             $updateData['video_ar'] = $item['video_ar']->store('home', 'home_storage');
                         }
 
                         if (isset($item['video_kr'])) {
-                            Storage::disk('home_storage')->delete($sectionItem->video_kr);
+                            $this->deleteFromHomeStorage($sectionItem->video_kr);
                             $updateData['video_kr'] = $item['video_kr']->store('home', 'home_storage');
                         }
                     }
@@ -154,7 +154,7 @@ class HomePageController extends Controller
                     $sectionItem->update($updateData);
 
                     if (isset($item['image'])) {
-                        Storage::disk('home_storage')->delete($sectionItem->image);
+                        $this->deleteFromHomeStorage($sectionItem->image);
                         $imagePath = $item['image']->store('home', 'home_storage');
                         $sectionItem->update(['image' => $imagePath]);
                     }
@@ -206,10 +206,10 @@ class HomePageController extends Controller
         if (!$section) return response()->error(new ErrorResponse('section not found', Response::HTTP_NOT_FOUND));
 
         foreach ($section->items as $item) {
-            Storage::disk('home_storage')->delete($item->image);
-            Storage::disk('home_storage')->delete($item->video_en);
-            Storage::disk('home_storage')->delete($item->video_ar);
-            Storage::disk('home_storage')->delete($item->video_kr);
+            $this->deleteFromHomeStorage($item->image);
+            $this->deleteFromHomeStorage($item->video_en);
+            $this->deleteFromHomeStorage($item->video_ar);
+            $this->deleteFromHomeStorage($item->video_kr);
             $item->delete();
         }
 
@@ -275,10 +275,10 @@ class HomePageController extends Controller
         $item = HomeSectionItem::find($id);
         if (!$item) return response()->error(new ErrorResponse('item not found', Response::HTTP_NOT_FOUND));
 
-        Storage::disk('home_storage')->delete($item->image);
-        Storage::disk('home_storage')->delete($item->video_en);
-        Storage::disk('home_storage')->delete($item->video_ar);
-        Storage::disk('home_storage')->delete($item->video_kr);
+        $this->deleteFromHomeStorage($item->image);
+        $this->deleteFromHomeStorage($item->video_en);
+        $this->deleteFromHomeStorage($item->video_ar);
+        $this->deleteFromHomeStorage($item->video_kr);
         $item->delete();
 
         return response()->success(new SuccessResponse("Item deleted successfully", Response::HTTP_OK));
@@ -309,17 +309,17 @@ class HomePageController extends Controller
 
         if ($item->home_section_id === 4) {
             if ($request->has('video_en')) {
-                Storage::disk('home_storage')->delete($item->video_en);
+                $this->deleteFromHomeStorage($item->video_en);
                 $updateData['video_en'] = $request->video_en->store('home', 'home_storage');
             }
 
             if ($request->has('video_ar')) {
-                Storage::disk('home_storage')->delete($item->video_ar);
+                $this->deleteFromHomeStorage($item->video_ar);
                 $updateData['video_ar'] = $request->video_ar->store('home', 'home_storage');
             }
 
             if ($request->has('video_kr')) {
-                Storage::disk('home_storage')->delete($item->video_kr);
+                $this->deleteFromHomeStorage($item->video_kr);
                 $updateData['video_kr'] = $request->video_kr->store('home', 'home_storage');
             }
         }
@@ -327,7 +327,7 @@ class HomePageController extends Controller
         $item->update($updateData);
 
         if ($request->has('image')) {
-            Storage::disk('home_storage')->delete($item->image);
+            $this->deleteFromHomeStorage($item->image);
             $imagePath = $request->image->store('home', 'home_storage');
             $item->update(['image' => $imagePath]);
         }
@@ -353,6 +353,14 @@ class HomePageController extends Controller
         $item->active = !$item->active;
         $item->save();
         return response()->success(new SuccessResponse(new HomeSectionItemResource($item), Response::HTTP_OK));
+    }
+
+
+    private function deleteFromHomeStorage(?string $path): void
+    {
+        if (!empty($path)) {
+            Storage::disk('home_storage')->delete($path);
+        }
     }
 
 }
