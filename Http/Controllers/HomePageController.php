@@ -39,7 +39,7 @@ class HomePageController extends Controller
             'description_ar' => 'nullable|string',
             'description_kr' => 'nullable|string',
             'items' => 'required|array',
-            'items.*.image' => 'required|image',
+            'items.*.image' => 'required|file',
             'items.*.title_en' => 'required|string',
             'items.*.title_ar' => 'required|string',
             'items.*.title_kr' => 'required|string',
@@ -96,7 +96,7 @@ class HomePageController extends Controller
             'description_kr' => 'nullable|string',
             'items' => 'sometimes|array',
             'items.*.id' => 'nullable|integer|exists:home_section_items,id',
-            'items.*.image' => 'nullable|image',
+            'items.*.image' => 'nullable|file',
             'items.*.cta_link' => 'nullable|url',
             'items.*.video_en' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv|max:51200',
             'items.*.video_ar' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv|max:51200',
@@ -228,7 +228,7 @@ class HomePageController extends Controller
     {
         $request->validate([
             'home_section_id' => 'required|integer',
-            'image' => 'nullable|image',
+            'image' => 'nullable|file',
             'cta_link' => 'nullable|url',
             'title_en' => 'required|string',
             'title_ar' => 'required|string',
@@ -287,7 +287,7 @@ class HomePageController extends Controller
     public function updateItem(Request $request, $id)
     {
         $request->validate([
-            'image' => 'nullable|image',
+            'image' => 'nullable|file',
             'cta_link' => 'nullable|string',
             'title_en' => 'required|string',
             'title_ar' => 'required|string',
