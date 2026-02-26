@@ -128,14 +128,6 @@ class SettingService
         foreach ($settings as $key=>$setting) {
             $set = [];
             $set['name'] = "home.page.$key";
-           if (isset($setting['video']['vfile']) && $setting['video']['vfile'] instanceof \Illuminate\Http\UploadedFile) {
-                $uploadedFile = $setting['video']['vfile'];
-                $path = $uploadedFile->store('videos', 'public'); // يحفظ الفيديو في storage/app/public/videos
-                $setting['video']['vfile'] = 'storage/' . $path;
-    }
-
-
-
            $set['value'] = $setting;
             $type = 'text';
             if ($key === 'status' || $key === 'cta' || $key === 'textSectionOne' || $key === 'textSectionTwo' || $key === 'videoText') {

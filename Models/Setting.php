@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Attribute;
 use Illuminate\Database\Eloquent\Casts\Attribute as CastsAttribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -54,20 +53,46 @@ class Setting extends BaseModel implements SpatieHasMedia
                 : $val,
     );
 }
-  public function getValueAttribute()
+    public function getValueAttribute()
     {
-        // إذا النوع video
         if (($this->options['type'] ?? '') === 'video') {
-            // جلب رابط الفيديو المرتبط بالـ Setting الحالي فقط
-            return $this->getFirstMediaUrl('video');
+            $locale = app()->getLocale() ?? 'en';
+            $allVideos = $this->getVideoByLocale();
+
+            return $allVideos[$locale] ?? $allVideos['en'] ?? reset($allVideos) ?: null;
         }
-    
-        // إذا مش فيديو، نرجع القيمة الأصلية (مثلاً JSON)
+
         return json_decode($this->attributes['value'] ?? null, true);
     }
-    public function getVideoAttribute(){
-        
+
+    public function getVideoAttribute()
+    {
+        return $this->getVideoByLocale();
     }
+
+    private function getVideoByLocale(): array
+    {
+        $videos = ['ar' => null, 'en' => null, 'kr' => null];
+
+        foreach ($this->getMedia('video') as $media) {
+            $lang = $media->getCustomProperty('lang');
+            if ($lang && array_key_exists($lang, $videos)) {
+                $videos[$lang] = $media->getUrl();
+            }
+        }
+
+        if (array_filter($videos)) {
+            return $videos;
+        }
+
+        $firstVideo = $this->getFirstMediaUrl('video');
+        if ($firstVideo) {
+            $videos['en'] = $firstVideo;
+        }
+
+        return $videos;
+    }
+
    
 
 }

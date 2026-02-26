@@ -4,7 +4,6 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\App;
 
 class SettingResource extends JsonResource
 {
@@ -19,11 +18,10 @@ class SettingResource extends JsonResource
         foreach ($this->getMedia('image') as $key => $value) {
             $data['image'] = $value->getUrl();
         }
-        foreach ($this->getMedia('video') as $key => $value) {
-            $data['video'] = $value->getUrl();
+        if (($this->options['type'] ?? '') === 'video') {
+            $data['videos'] = $this->video;
         }
-        
-        
+
         return $data;
 
     }

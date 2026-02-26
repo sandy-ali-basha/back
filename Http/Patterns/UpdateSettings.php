@@ -41,13 +41,20 @@ class UpdateSettings implements IOperations
                  $folder = 'home_slides';
                 $setting = Setting::create($data);
             } else if ($data['options']['type'] === 'video') {
-                $vid = $data['value']['vfile'] ?? '';
+                $videos = $data['value'] ?? [];
                 $data['value'] = '';
                 $setting = Setting::create($data);
-                if ($vid) {
-                    $setting->addMedia($vid)->toMediaCollection('video', 'settings_files');
-                    $setting->refresh();
+
+                foreach (['ar', 'en', 'kr'] as $locale) {
+                    $vid = $videos[$locale]['vfile'] ?? null;
+                    if ($vid) {
+                        $setting->addMedia($vid)
+                            ->withCustomProperties(['lang' => $locale])
+                            ->toMediaCollection('video', 'settings_files');
+                    }
                 }
+
+                $setting->refresh();
             } else {
                 if ($data['options']['type'] === 'json') {
                     $data['value'] = json_encode($data['value']);
@@ -74,17 +81,28 @@ class UpdateSettings implements IOperations
                     $folder = 'home_slides';
                     
                 } else if ($data['options']['type'] === 'video') {
-                    $vid = $data['value']['vfile'] ?? '';
+                    $videos = $data['value'] ?? [];
                     $data['value'] = '';
-                    if ($vid) {
-                        $vids = $setting->getMedia('video');
-                    
-                        if ($vids->count() > 0) {
-                            $setting->deleteMedia($setting->getMedia('video')[0]);
+
+                    foreach (['ar', 'en', 'kr'] as $locale) {
+                        $vid = $videos[$locale]['vfile'] ?? null;
+                        if (!$vid) {
+                            continue;
                         }
-                        $setting->addMedia($vid)->toMediaCollection('video', 'settings_files');
-                        $setting->refresh();
+
+                        $existing = $setting->getMedia('video')
+                            ->first(fn ($media) => ($media->getCustomProperty('lang') ?? null) === $locale);
+
+                        if ($existing) {
+                            $setting->deleteMedia($existing);
+                        }
+
+                        $setting->addMedia($vid)
+                            ->withCustomProperties(['lang' => $locale])
+                            ->toMediaCollection('video', 'settings_files');
                     }
+
+                    $setting->refresh();
                 } else {
                     if ($data['options']['type'] === 'json') {
                         // $oldData = $setting->value;
