@@ -34,9 +34,35 @@ class AddressModel extends Address
 
     public function shipping_price()
     {
-        $city = City::where('name', $this->city)->first();
-    
-        return $city ? $city->shipping_price : 0; // or null
+        $stateValue = is_string($this->state) ? trim($this->state) : $this->state;
+        $cityValue = is_string($this->city) ? trim($this->city) : $this->city;
+
+        if (is_numeric($stateValue)) {
+            return (float) (\App\Models\City::find((int) $stateValue)?->shipping_price ?? 0);
+        }
+
+        if (is_numeric($cityValue)) {
+            return (float) (\App\Models\City::find((int) $cityValue)?->shipping_price ?? 0);
+        }
+
+        $candidates = array_filter([
+            $stateValue,
+            is_string($stateValue) ? preg_replace('/^state\./', '', $stateValue) : null,
+            $cityValue,
+        ]);
+
+        foreach ($candidates as $candidate) {
+            $city = \App\Models\City::query()
+                ->where('name', $candidate)
+                ->orWhere('inv_name', $candidate)
+                ->first();
+
+            if ($city) {
+                return (float) ($city->shipping_price ?? 0);
+            }
+        }
+
+        return 0.0;
     }
     
    
