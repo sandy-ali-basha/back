@@ -78,8 +78,10 @@ class UpdateHomeSettingsData extends Data
             'textSectionTwo.text.*' => 'nullable|string',
             'textSectionTwo.image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp',
 
-            'video.vfile' => 'nullable|file|mimes:mp4,avi,mov,wmv|max:10240',
-            'video.vfile' => 'nullable',
+            'video' => 'nullable|array',
+            'video.ar.vfile' => 'nullable|file|mimes:mp4,avi,mov,wmv|max:10240',
+            'video.en.vfile' => 'nullable|file|mimes:mp4,avi,mov,wmv|max:10240',
+            'video.kr.vfile' => 'nullable|file|mimes:mp4,avi,mov,wmv|max:10240',
             'videoText' => 'nullable|array',
             'videoText.*' => 'nullable|string',
         ];
