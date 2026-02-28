@@ -86,23 +86,67 @@ class ProductModel extends Product
             //}
 if (!empty($filters)) {
 
-    foreach ($filters as $filter) {
+    $normalizedFilters = [];
 
-        $attributeId = $filter['attribute_id'] ?? null;
-        $valueIds    = $filter['values'] ?? [];
+    foreach ($filters as $key => $filter) {
+        // Format A: [{"attribute_id": 4, "values": [0,45]}, ...]
+        if (is_array($filter) && array_key_exists('attribute_id', $filter)) {
+            $attributeId = (int) $filter['attribute_id'];
+            $valueIds = is_array($filter['values'] ?? null) ? $filter['values'] : [];
+        }
+        // Format B: {"4": [0,45], "14": [82]}
+        else {
+            $attributeId = is_numeric($key) ? (int) $key : 0;
+            $valueIds = is_array($filter) ? $filter : [];
+        }
 
-        if (!$attributeId) {
+        if ($attributeId <= 0) {
             continue;
         }
 
-        $query->whereHas('ProductAttributesValues', function ($q) use ($attributeId, $valueIds) {
+        $rawValues = is_array($valueIds) ? $valueIds : [];
 
+        // Ignore truly empty filters like {3: []}
+        if (empty($rawValues)) {
+            continue;
+        }
+
+        $hasZeroValue = collect($rawValues)
+            ->contains(fn($id) => is_numeric($id) && (int) $id === 0);
+
+        $normalizedValueIds = collect($rawValues)
+            ->filter(fn($id) => is_numeric($id) && (int) $id > 0)
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        // If only 0 is sent (e.g. {4:[0]}), treat as "any value under this attribute".
+        $useAnyValueForAttribute = $hasZeroValue && empty($normalizedValueIds);
+
+        // Ignore invalid payloads that ended with no usable values and no explicit 0 wildcard.
+        if (!$useAnyValueForAttribute && empty($normalizedValueIds)) {
+            continue;
+        }
+
+        $normalizedFilters[] = [
+            'attribute_id' => $attributeId,
+            'value_ids' => $normalizedValueIds,
+            'use_any_value' => $useAnyValueForAttribute,
+        ];
+    }
+
+    foreach ($normalizedFilters as $filter) {
+        $attributeId = $filter['attribute_id'];
+        $valueIds = $filter['value_ids'];
+        $useAnyValue = $filter['use_any_value'];
+
+        $query->whereHas('ProductAttributesValues', function ($q) use ($attributeId, $valueIds, $useAnyValue) {
             $q->where('product_attributes_values.product_attributes_id', $attributeId);
 
-            if (!empty($valueIds)) {
+            if (!$useAnyValue) {
                 $q->whereIn('product_attributes_values_id', $valueIds);
             }
-
         });
     }
 }
