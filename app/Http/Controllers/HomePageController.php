@@ -39,7 +39,7 @@ class HomePageController extends Controller
             'description_ar' => 'nullable|string',
             'description_kr' => 'nullable|string',
             'items' => 'required|array',
-            'items.*.image' => 'required|image',
+            'items.*.image' => 'required|file',
             'items.*.title_en' => 'required|string',
             'items.*.title_ar' => 'required|string',
             'items.*.title_kr' => 'required|string',
@@ -47,6 +47,9 @@ class HomePageController extends Controller
             'items.*.description_ar' => 'nullable|string',
             'items.*.description_kr' => 'nullable|string',
             'items.*.cta_link' => 'nullable|url',
+            'items.*.video_en' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv|max:51200',
+            'items.*.video_ar' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv|max:51200',
+            'items.*.video_kr' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv|max:51200',
         ]);
 
         $section = HomeSection::create($request->only([
@@ -57,7 +60,7 @@ class HomePageController extends Controller
 
         foreach ($request->items as $item) {
             $imagePath = $item['image']->store('home', 'home_storage');
-            $section->items()->create([
+            $itemData = [
                 'image' => $imagePath,
                 'cta_link' => $item['cta_link'],
                 'title_en' => $item['title_en'],
@@ -66,7 +69,15 @@ class HomePageController extends Controller
                 'description_en' => $item['description_en'],
                 'description_ar' => $item['description_ar'],
                 'description_kr' => $item['description_kr'],
-            ]);
+            ];
+
+            if ($section->id === 4) {
+                $itemData['video_en'] = isset($item['video_en']) ? $item['video_en']->store('home', 'home_storage') : null;
+                $itemData['video_ar'] = isset($item['video_ar']) ? $item['video_ar']->store('home', 'home_storage') : null;
+                $itemData['video_kr'] = isset($item['video_kr']) ? $item['video_kr']->store('home', 'home_storage') : null;
+            }
+
+            $section->items()->create($itemData);
         }
 
         $resource = new HomeSectionResource($section->load('items'));
@@ -85,8 +96,11 @@ class HomePageController extends Controller
             'description_kr' => 'nullable|string',
             'items' => 'sometimes|array',
             'items.*.id' => 'nullable|integer|exists:home_section_items,id',
-            'items.*.image' => 'nullable|image',
+            'items.*.image' => 'nullable|file',
             'items.*.cta_link' => 'nullable|url',
+            'items.*.video_en' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv|max:51200',
+            'items.*.video_ar' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv|max:51200',
+            'items.*.video_kr' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv|max:51200',
             'items.*.title_en' => 'required_with:items|string',
             'items.*.title_ar' => 'required|string',
             'items.*.title_kr' => 'required|string',
@@ -110,7 +124,7 @@ class HomePageController extends Controller
             foreach ($request->items as $item) {
                 if (isset($item['id'])) {
                     $sectionItem = HomeSectionItem::findOrFail($item['id']);
-                    $sectionItem->update([
+                    $updateData = [
                         'cta_link' => $item['cta_link'],
                         'title_en' => $item['title_en'],
                         'title_ar' => $item['title_ar'],
@@ -118,16 +132,35 @@ class HomePageController extends Controller
                         'description_en' => $item['description_en'],
                         'description_ar' => $item['description_ar'],
                         'description_kr' => $item['description_kr'],
-                    ]);
+                    ];
+
+                    if ($section->id === 4) {
+                        if (isset($item['video_en'])) {
+                            $this->deleteFromHomeStorage($sectionItem->video_en);
+                            $updateData['video_en'] = $item['video_en']->store('home', 'home_storage');
+                        }
+
+                        if (isset($item['video_ar'])) {
+                            $this->deleteFromHomeStorage($sectionItem->video_ar);
+                            $updateData['video_ar'] = $item['video_ar']->store('home', 'home_storage');
+                        }
+
+                        if (isset($item['video_kr'])) {
+                            $this->deleteFromHomeStorage($sectionItem->video_kr);
+                            $updateData['video_kr'] = $item['video_kr']->store('home', 'home_storage');
+                        }
+                    }
+
+                    $sectionItem->update($updateData);
 
                     if (isset($item['image'])) {
-                        Storage::disk('home_storage')->delete($sectionItem->image);
+                        $this->deleteFromHomeStorage($sectionItem->image);
                         $imagePath = $item['image']->store('home', 'home_storage');
                         $sectionItem->update(['image' => $imagePath]);
                     }
                 } else {
                     $imagePath = $item['image']->store('home', 'home_storage');
-                    $section->items()->create([
+                    $newItemData = [
                         'image' => $imagePath,
                         'cta_link' => $item['cta_link'],
                         'title_en' => $item['title_en'],
@@ -136,7 +169,15 @@ class HomePageController extends Controller
                         'description_en' => $item['description_en'],
                         'description_ar' => $item['description_ar'],
                         'description_kr' => $item['description_kr'],
-                    ]);
+                    ];
+
+                    if ($section->id === 4) {
+                        $newItemData['video_en'] = isset($item['video_en']) ? $item['video_en']->store('home', 'home_storage') : null;
+                        $newItemData['video_ar'] = isset($item['video_ar']) ? $item['video_ar']->store('home', 'home_storage') : null;
+                        $newItemData['video_kr'] = isset($item['video_kr']) ? $item['video_kr']->store('home', 'home_storage') : null;
+                    }
+
+                    $section->items()->create($newItemData);
                 }
             }
         }
@@ -165,7 +206,10 @@ class HomePageController extends Controller
         if (!$section) return response()->error(new ErrorResponse('section not found', Response::HTTP_NOT_FOUND));
 
         foreach ($section->items as $item) {
-            Storage::disk('home_storage')->delete($item->image);
+            $this->deleteFromHomeStorage($item->image);
+            $this->deleteFromHomeStorage($item->video_en);
+            $this->deleteFromHomeStorage($item->video_ar);
+            $this->deleteFromHomeStorage($item->video_kr);
             $item->delete();
         }
 
@@ -184,7 +228,7 @@ class HomePageController extends Controller
     {
         $request->validate([
             'home_section_id' => 'required|integer',
-            'image' => 'nullable|image',
+            'image' => 'nullable|file',
             'cta_link' => 'nullable|url',
             'title_en' => 'required|string',
             'title_ar' => 'required|string',
@@ -192,12 +236,37 @@ class HomePageController extends Controller
             'description_en' => 'nullable|string',
             'description_ar' => 'nullable|string',
             'description_kr' => 'nullable|string',
+            'video_en' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv|max:51200',
+            'video_ar' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv|max:51200',
+            'video_kr' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv|max:51200',
         ]);
 
         $homeSection = HomeSection::find($request->home_section_id);
         if (!$homeSection) return response()->error(new ErrorResponse('section not found', Response::HTTP_NOT_FOUND));
 
-        $item = HomeSectionItem::create($request->toArray());
+        $itemData = $request->only([
+            'home_section_id', 'cta_link', 'title_en', 'title_ar', 'title_kr', 'description_en', 'description_ar', 'description_kr'
+        ]);
+
+        if ($request->has('image')) {
+            $itemData['image'] = $request->image->store('home', 'home_storage');
+        }
+
+        if ($homeSection->id === 4) {
+            if ($request->has('video_en')) {
+                $itemData['video_en'] = $request->video_en->store('home', 'home_storage');
+            }
+
+            if ($request->has('video_ar')) {
+                $itemData['video_ar'] = $request->video_ar->store('home', 'home_storage');
+            }
+
+            if ($request->has('video_kr')) {
+                $itemData['video_kr'] = $request->video_kr->store('home', 'home_storage');
+            }
+        }
+
+        $item = HomeSectionItem::create($itemData);
         return response()->success(new SuccessResponse(new HomeSectionItemResource($item), Response::HTTP_OK));
     }
 
@@ -206,7 +275,10 @@ class HomePageController extends Controller
         $item = HomeSectionItem::find($id);
         if (!$item) return response()->error(new ErrorResponse('item not found', Response::HTTP_NOT_FOUND));
 
-        Storage::disk('home_storage')->delete($item->image);
+        $this->deleteFromHomeStorage($item->image);
+        $this->deleteFromHomeStorage($item->video_en);
+        $this->deleteFromHomeStorage($item->video_ar);
+        $this->deleteFromHomeStorage($item->video_kr);
         $item->delete();
 
         return response()->success(new SuccessResponse("Item deleted successfully", Response::HTTP_OK));
@@ -215,7 +287,7 @@ class HomePageController extends Controller
     public function updateItem(Request $request, $id)
     {
         $request->validate([
-            'image' => 'nullable|image',
+            'image' => 'nullable|file',
             'cta_link' => 'nullable|string',
             'title_en' => 'required|string',
             'title_ar' => 'required|string',
@@ -223,17 +295,39 @@ class HomePageController extends Controller
             'description_en' => 'nullable|string',
             'description_ar' => 'nullable|string',
             'description_kr' => 'nullable|string',
+            'video_en' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv|max:51200',
+            'video_ar' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv|max:51200',
+            'video_kr' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv|max:51200',
         ]);
 
         $item = HomeSectionItem::find($id);
         if (!$item) return response()->error(new ErrorResponse('item not found', Response::HTTP_NOT_FOUND));
 
-        $item->update($request->only([
+        $updateData = $request->only([
             'cta_link', 'title_en','title_ar','title_kr','description_en','description_ar','description_kr'
-        ]));
+        ]);
+
+        if ($item->home_section_id === 4) {
+            if ($request->has('video_en')) {
+                $this->deleteFromHomeStorage($item->video_en);
+                $updateData['video_en'] = $request->video_en->store('home', 'home_storage');
+            }
+
+            if ($request->has('video_ar')) {
+                $this->deleteFromHomeStorage($item->video_ar);
+                $updateData['video_ar'] = $request->video_ar->store('home', 'home_storage');
+            }
+
+            if ($request->has('video_kr')) {
+                $this->deleteFromHomeStorage($item->video_kr);
+                $updateData['video_kr'] = $request->video_kr->store('home', 'home_storage');
+            }
+        }
+
+        $item->update($updateData);
 
         if ($request->has('image')) {
-            Storage::disk('home_storage')->delete($item->image);
+            $this->deleteFromHomeStorage($item->image);
             $imagePath = $request->image->store('home', 'home_storage');
             $item->update(['image' => $imagePath]);
         }
@@ -259,6 +353,16 @@ class HomePageController extends Controller
         $item->active = !$item->active;
         $item->save();
         return response()->success(new SuccessResponse(new HomeSectionItemResource($item), Response::HTTP_OK));
+    }
+
+
+    private function deleteFromHomeStorage(mixed $path): void
+    {
+        if (!is_string($path) || trim($path) === '') {
+            return;
+        }
+
+        Storage::disk('home_storage')->delete($path);
     }
 
 }

@@ -11,13 +11,16 @@ class HomeSectionItemResource extends JsonResource
         return [
             'id' => $this->id,
             'image' => $this->image_url,
+            'video_en' => $this->video_en_url,
+            'video_ar' => $this->video_ar_url,
+            'video_kr' => $this->video_kr_url,
             'cta_link' => $this->cta_link,
             'title_en' => $this->title_en,
             'description_en' => $this->description_en,
             'title_ar' => $this->title_ar,
             'description_ar' => $this->description_ar,
-            'title_kr' => $this->title_ar,
-            'description_kr' => $this->description_ar,
+            'title_kr' => $this->title_kr,
+            'description_kr' => $this->description_kr,
         ];
     }
 }
