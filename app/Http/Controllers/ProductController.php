@@ -248,15 +248,11 @@ class ProductController extends Controller
     }
     public function updateProductVariant(Request $request,$id){
         $product = ProductVariant::find($id);
-        $rules = [
-            'options.*.compare_price_start_date' => ['nullable', 'date'],
-            'options.*.compare_price_end_date'   => ['nullable', 'date', 'after_or_equal:options.*.compare_price_start_date'],
-        ];
-
-
         $request->validate([
+            'compare_price_start_date' => ['nullable', 'date'],
+            'compare_price_end_date'   => ['nullable', 'date', 'after_or_equal:compare_price_start_date'],
             'options.compare_price_start_date' => ['nullable', 'date'],
-            'options.compare_price_end_date'   => ['nullable', 'date', 'after_or_equal:options.*.compare_price_start_date'],
+            'options.compare_price_end_date'   => ['nullable', 'date', 'after_or_equal:options.compare_price_start_date'],
         ]);
 
         if (!$product) {
@@ -265,8 +261,10 @@ class ProductController extends Controller
             return response()->error($response);
         }
 
-        $this->productService->updateProuctVariant($product->id, $request->options);
-        $productVariantsResource          = new ProductVariantsResource($product);
+        $payload = $request->input('options', $request->all());
+
+        $this->productService->updateProuctVariant($product->id, $payload);
+        $productVariantsResource          = new ProductVariantsResource($product->fresh());
 
         $response               = new SuccessResponse($productVariantsResource, Response::HTTP_OK);
 

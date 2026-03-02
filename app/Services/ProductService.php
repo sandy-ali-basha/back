@@ -333,9 +333,14 @@ public function getVariantById($id)
     return ProductVariant::find($id); // returns a single model
 }
 
-    public function updateProuctVariant($id, ?array $options)
+public function updateProuctVariant($id, ?array $options)
     {
+        $options = $options ?? [];
         $variant = ProductVariant::where("id", $id)->first();
+
+        if (!$variant) {
+            return;
+        }
 
         try {
 
@@ -345,20 +350,24 @@ public function getVariantById($id)
                 'unit_quantity' => $options['unit_quantity']??$variant->unit_quantity,
                 'purchasable' => $options['purchasable']??$variant->purchasable,
                 'storage_qty' => $options['storage_qty']??$variant->storage_qty,
-                'stock' => $options['stock']??$variant->stock,
+                'stock' => $options['stock'] ?? $options['inventory'] ?? $variant->stock,
                 'city_id' => $options['city_id']??$variant->city_id,
                 'reorder_point' => $options['reorder_point']??$variant->reorder_point,
             ]);
             $priceModel = Price::where('priceable_type', 'Lunar\Models\ProductVariant')->where('priceable_id', $variant->id)->first();
+            if (!$priceModel) {
+                return;
+            }
+
             $price      = $options['price'] ?? $priceModel->price;
 
             $currency = City::find($options['city_id'])->currency_id??City::find($variant->city_id)->currency_id;
             $priceModel->update([
                 'price' => $price,
                 'currency_id' => $currency,
-                'compare_price' => $options['compare_price']??$variant->compare_price,
-                'compare_price_start_date' => $options['compare_price_start_date'],
-                'compare_price_end_date' => $options['compare_price_end_date']
+                'compare_price' => $options['compare_price'] ?? $priceModel->compare_price,
+                'compare_price_start_date' => $options['compare_price_start_date'] ?? $priceModel->compare_price_start_date,
+                'compare_price_end_date' => $options['compare_price_end_date'] ?? $priceModel->compare_price_end_date
             ]);
 
         } catch (\Exception $exception) {
