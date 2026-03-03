@@ -361,7 +361,8 @@ public function updateProuctVariant($id, ?array $options)
 
             $price      = $options['price'] ?? $priceModel->price;
 
-            $currency = City::find($options['city_id'])->currency_id??City::find($variant->city_id)->currency_id;
+            $cityId   = $options['city_id'] ?? $variant->city_id;
+            $currency = optional(City::find($cityId))->currency_id ?? $priceModel->currency_id;
             $priceModel->update([
                 'price' => $price,
                 'currency_id' => $currency,

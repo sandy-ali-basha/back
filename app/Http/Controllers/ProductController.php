@@ -261,7 +261,10 @@ class ProductController extends Controller
             return response()->error($response);
         }
 
-        $payload = $request->input('options', $request->all());
+        $optionsPayload = $request->input('options');
+        $payload        = is_array($optionsPayload) && array_is_list($optionsPayload)
+            ? $request->except(['options', 'currency', 'option_value_ids'])
+            : (is_array($optionsPayload) ? $optionsPayload : $request->except(['options', 'currency', 'option_value_ids']));
 
         $this->productService->updateProuctVariant($product->id, $payload);
         $productVariantsResource          = new ProductVariantsResource($product->fresh());
